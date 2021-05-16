@@ -1,0 +1,55 @@
+service: coronajob
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+
+  region: eu-north-1
+
+custom:
+  webpack:
+    includeModules:
+      packagePath: '../package.json' # relative path to custom package.json file.
+functions:
+  coronajob:
+    handler: handler.coronajob
+
+resources:
+  Resources:
+    coronajobs:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: coronajobs
+        AttributeDefinitions:
+          - AttributeName: vaccinating
+            AttributeType: S
+        KeySchema:
+          - AttributeName: vaccinating
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    # A policy is a resource that states one or more permssions. It lists actions, resources and effects.
+
+    DynamoDBIamPolicy: 
+      Type: AWS::IAM::Policy
+      DependsOn: coronajobs
+      Properties:
+        PolicyName: lambda-dynamodb
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:DescribeTable
+                - dynamodb:Query
+                - dynamodb:Scan
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+              Resource: arn:aws:dynamodb:*:*:table/coronajobs
+        Roles:
+          - Ref: IamRoleLambdaExecution
